@@ -25,17 +25,21 @@ final class AudioCaptureService {
         return microphone && speech
     }
 
+    static func configureSession() throws {
+        var options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP, .defaultToSpeaker]
+        if #available(iOS 26.0, *) {
+            options.insert(.bluetoothHighQualityRecording)
+        }
+        try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .measurement, options: options)
+    }
+
     func start(
         recordingURL: URL,
         onMeter: @escaping @Sendable (MeterReading) -> Void,
         onTranscript: @escaping @Sendable (_ text: String, _ isFinal: Bool, _ latencyMilliseconds: Double) -> Void
     ) throws -> AudioRouteSnapshot {
         let session = AVAudioSession.sharedInstance()
-        var options: AVAudioSession.CategoryOptions = [.allowBluetooth, .defaultToSpeaker]
-        if #available(iOS 26.0, *) {
-            options.insert(.bluetoothHighQualityRecording)
-        }
-        try session.setCategory(.playAndRecord, mode: .measurement, options: options)
+        try Self.configureSession()
         try session.setPreferredIOBufferDuration(0.01)
         try session.setActive(true, options: .notifyOthersOnDeactivation)
 

@@ -39,6 +39,12 @@ final class SensorLabViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+        do {
+            try AudioCaptureService.configureSession()
+            route = AudioCaptureService.currentRouteSnapshot()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
