@@ -33,15 +33,18 @@ final class AudioCaptureService {
         try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .measurement, options: options)
     }
 
+    @MainActor
     func start(
         recordingURL: URL,
         onMeter: @escaping @Sendable (MeterReading) -> Void,
         onTranscript: @escaping @Sendable (_ text: String, _ isFinal: Bool, _ latencyMilliseconds: Double) -> Void
-    ) throws -> AudioRouteSnapshot {
+    ) async throws -> AudioRouteSnapshot {
         let session = AVAudioSession.sharedInstance()
         try Self.configureSession()
         try session.setPreferredIOBufferDuration(0.01)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
+        try await Task.detached(priority: .userInitiated) {
+            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+        }.value
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -76,6 +79,7 @@ final class AudioCaptureService {
         return Self.routeSnapshot(session)
     }
 
+    @MainActor
     func stop() {
         if engine.isRunning {
             engine.stop()
@@ -89,7 +93,9 @@ final class AudioCaptureService {
         recognitionTask = nil
         recognitionRequest = nil
         audioFile = nil
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        Task.detached(priority: .utility) {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     static func currentRouteSnapshot() -> AudioRouteSnapshot {

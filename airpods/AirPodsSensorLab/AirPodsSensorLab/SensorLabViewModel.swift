@@ -28,6 +28,8 @@ final class SensorLabViewModel: ObservableObject {
     private var sessionDirectory: URL?
     private var samples: [SensorSample] = []
     private var timer: Timer?
+    // start() は途中で await するため、完了前の二重開始（installTap の重複）を防ぐ。
+    private var isStarting = false
 
     var motionAvailable: Bool { motion.isAvailable }
     var isAirPodsInput: Bool { route.usesBluetoothInput }
@@ -59,7 +61,9 @@ final class SensorLabViewModel: ObservableObject {
     }
 
     func start() async {
-        guard !isRecording, let store else { return }
+        guard !isRecording, !isStarting, let store else { return }
+        isStarting = true
+        defer { isStarting = false }
         errorMessage = nil
         guard await AudioCaptureService.requestPermissions() else {
             errorMessage = "マイクまたは音声認識の権限がありません。設定アプリから許可してください。"
@@ -77,7 +81,7 @@ final class SensorLabViewModel: ObservableObject {
             speechLatencyMilliseconds = nil
             samples.removeAll(keepingCapacity: true)
 
-            route = try audio.start(
+            route = try await audio.start(
                 recordingURL: directory.appendingPathComponent("audio.caf"),
                 onMeter: { [weak self] reading in
                     Task { @MainActor in self?.accept(reading) }
