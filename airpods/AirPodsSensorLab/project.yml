@@ -16,6 +16,8 @@ targets:
       path: AirPodsSensorLab/Info.plist
       properties:
         CFBundleDisplayName: AirPods Sensor Lab
+        CFBundleShortVersionString: 0.1.0
+        LSRequiresIPhoneOS: true
         UILaunchScreen: {}
         NSMicrophoneUsageDescription: AirPodsとiPhoneのマイク性能を計測し、音声を記録するために使用します。
         NSSpeechRecognitionUsageDescription: 収録音声の認識精度と遅延を計測するために使用します。
