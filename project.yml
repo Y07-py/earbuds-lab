@@ -1,0 +1,31 @@
+name: AirPodsSensorLab
+options:
+  bundleIdPrefix: com.kimoto
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+targets:
+  AirPodsSensorLab:
+    type: application
+    platform: iOS
+    sources:
+      - path: AirPodsSensorLab
+    info:
+      path: AirPodsSensorLab/Info.plist
+      properties:
+        CFBundleDisplayName: AirPods Sensor Lab
+        UILaunchScreen: {}
+        NSMicrophoneUsageDescription: AirPodsとiPhoneのマイク性能を計測し、音声を記録するために使用します。
+        NSSpeechRecognitionUsageDescription: 収録音声の認識精度と遅延を計測するために使用します。
+        NSMotionUsageDescription: AirPodsの頭部モーションを計測するために使用します。
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kimoto.AirPodsSensorLab
+        PRODUCT_NAME: AirPodsSensorLab
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
