@@ -9,6 +9,7 @@ struct ContentView: View {
                 statusSection
                 experimentSection
                 liveSection
+                trialSection
                 transcriptSection
                 controlSection
                 sessionsSection
@@ -31,6 +32,7 @@ struct ContentView: View {
                     .foregroundStyle(model.isAirPodsInput ? .green : .orange)
             }
             LabeledContent("形式", value: "\(Int(model.route.sampleRate)) Hz / \(model.route.inputChannels) ch")
+            LabeledContent("高音質録音", value: highQualityStatus)
             LabeledContent("Head Motion", value: model.motionAvailable ? "利用可能" : "利用不可")
         }
     }
@@ -43,6 +45,9 @@ struct ContentView: View {
             Picker("話者", selection: $model.speakerTarget) {
                 ForEach(SpeakerTarget.allCases) { Text($0.rawValue).tag($0) }
             }
+            Picker("音声モード", selection: $model.audioQualityMode) {
+                ForEach(AudioQualityMode.allCases) { Text($0.displayName).tag($0) }
+            }
             HStack {
                 Text("距離")
                 Slider(value: $model.distanceMeters, in: 0.1...3.0, step: 0.1)
@@ -51,7 +56,26 @@ struct ContentView: View {
             TextField("メモ（騒音、端末位置など）", text: $model.notes, axis: .vertical)
                 .lineLimit(2...4)
         }
-        .disabled(model.isRecording)
+        .disabled(model.isRecording || model.isStarting || model.isStopping)
+    }
+
+    private var trialSection: some View {
+        Section("試行ラベル") {
+            Picker("動作", selection: $model.selectedLabel) {
+                ForEach(ExperimentLabel.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .disabled(!model.isRecording || model.activeTrialNumber != nil)
+
+            if let number = model.activeTrialNumber, let label = model.activeTrialLabel {
+                LabeledContent("記録中", value: "#\(number) \(label.rawValue)")
+                Button("この試行を終了", action: model.endTrial)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Button("選択した試行を開始", action: model.startTrial)
+                    .frame(maxWidth: .infinity)
+                    .disabled(!model.isRecording)
+            }
+        }
     }
 
     private var liveSection: some View {
@@ -64,7 +88,7 @@ struct ContentView: View {
             LabeledContent("Pitch", value: String(format: "%.1f°", model.pitch))
             LabeledContent("Yaw", value: String(format: "%.1f°", model.yaw))
             LabeledContent("Roll", value: String(format: "%.1f°", model.roll))
-            LabeledContent("音声→文字 遅延", value: model.speechLatencyMilliseconds.map { String(format: "%.0f ms", $0) } ?? "—")
+            LabeledContent("発話終端→認識（推定）", value: model.speechLatencyMilliseconds.map { String(format: "%.0f ms", $0) } ?? "—")
         }
     }
 
@@ -79,11 +103,15 @@ struct ContentView: View {
     private var controlSection: some View {
         Section {
             Button(action: model.toggleRecording) {
-                Label(model.isRecording ? "計測を停止して保存" : "計測を開始", systemImage: model.isRecording ? "stop.circle.fill" : "record.circle")
+                Label(
+                    model.isStopping ? "認識結果を確定中…" : (model.isStarting ? "計測を準備中…" : (model.isRecording ? "計測を停止して保存" : "計測を開始")),
+                    systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
+                )
                     .frame(maxWidth: .infinity)
                     .font(.headline)
                     .foregroundStyle(model.isRecording ? .red : .blue)
             }
+            .disabled(model.isStarting || model.isStopping)
         }
     }
 
@@ -105,11 +133,15 @@ struct ContentView: View {
             }
         }
     }
+
+    private var highQualityStatus: String {
+        if model.route.highQualityRecordingEnabled == true { return "有効" }
+        if model.route.highQualityRecordingSupported == true { return "対応（現在無効）" }
+        if model.route.highQualityRecordingSupported == false { return "非対応" }
+        return "情報なし"
+    }
 }
 
 private extension String {
     func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
 }
-
-#Preview { ContentView() }
-
